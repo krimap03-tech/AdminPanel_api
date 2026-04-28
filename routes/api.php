@@ -1,58 +1,136 @@
 <?php
 
-use App\Http\Controllers\Admin\AdminMovieController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Admin\AdminLoginController;
+use App\Http\Controllers\Admin\AdminMovieController;
+use App\Http\Controllers\Api\AuthUiController;
+use App\Http\Controllers\Api\MovieStatsController;
+use App\Http\Controllers\MovieController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\PaymentController;
-use App\Models\Payment;
+use App\Http\Controllers\PosController;
+use App\Http\Controllers\PospayController;
+use App\Http\Middleware\AdminAuth;
+use App\Models\User;
 
+/*
+|--------------------------------------------------------------------------
+| HEALTH CHECK
+|--------------------------------------------------------------------------
+*/
+Route::get('/pospay',[PospayController::class,'show']);
+Route::get('/pos',[PosController::class,'show']);
+Route::get('/', fn () => response()->json([
+    'status' => 'API is running 🚀'
+]));
 
-// 🚀 HEALTH CHECK
-Route::get('/', function () {
-    return response()->json(['status' => 'API is running 🚀']);
-});
-
-
-/* ---------------------- USER AUTH (bookmyshow_ui) ---------------------- */
+/*
+|--------------------------------------------------------------------------
+| USER AUTH (PUBLIC)
+|--------------------------------------------------------------------------
+*/
 Route::prefix('auth')->group(function () {
-    Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/signup', [AuthController::class, 'signup']);
+    Route::Post('/signup',[AuthUiController::class,'signup']);
+    // Route::post('/login', [AuthController::class, 'login']);
+    // Route::post('/signup', [AuthUiController::class, 'signup']);
 });
 
-Route::middleware('auth:sanctum')->group(function () {
-    Route::get('/user', fn() => auth()->Auth::user()());
-    Route::post('/logout', [AuthController::class, 'logout']);
+/*
+|--------------------------------------------------------------------------
+| USER MOVIES (PUBLIC)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('movies')->group(function () {
+    Route::get('/', [MovieController::class, 'index']);
+    Route::get('/{id}', [MovieController::class, 'show']);
+    Route::get('/{movieId}/stats', [MovieStatsController::class, 'movieStats']);
 });
 
-
-/* ---------------------- ADMIN AUTH (adminpanel_ui) ---------------------- */
-Route::prefix('admin')->group(function () {
-    Route::post('/login', [AdminLoginController::class, 'login']);
-    Route::post('/signup', [AdminLoginController::class, 'signup']);
-    Route::put('/movies/{id}', [AdminMovieController::class, 'update']);
-    Route::get('/movies/{id}', [AdminMovieController::class, 'show']);
-
-});
-
-Route::prefix('admin')->middleware('auth:sanctum')->group(function () {
-    Route::apiResource('/movies', AdminMovieController::class);
-});
-
-
-/* ---------------------- BOOKINGS (User) ---------------------- */
+/*
+|--------------------------------------------------------------------------
+| BOOKINGS (PUBLIC – used for payment gateway callbacks)
+|--------------------------------------------------------------------------
+*/
 Route::prefix('bookings')->group(function () {
     Route::post('/', [BookingController::class, 'store']);
     Route::get('/success', [BookingController::class, 'paymentSuccess']);
     Route::get('/cancel', [BookingController::class, 'paymentCancel']);
 });
 
+/*
+|--------------------------------------------------------------------------
+| AUTHENTICATED USER ROUTES (SANCTUM)
+|--------------------------------------------------------------------------
+*/
+Route::middleware('auth:sanctum')->group(function () {
 
-/* ---------------------- PAYMENTS ---------------------- */
-Route::prefix('payments')->group(function () {
-    Route::get('/', fn() => Payment::all());
-    Route::post('/verify', [\App\Http\Controllers\PaymentController::class, 'store']);
+    // Logged-in user
+    Route::get('/user', fn () => auth()->user());
+
+    // Logout
+    Route::post('/logout', [AuthController::class, 'logout']);
+
+    // Payments (PROTECTED)
+    Route::post('/payments', [PaymentController::class, 'store']);
 });
 
+/*
+|--------------------------------------------------------------------------
+| ADMIN AUTH (PUBLIC)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('admin')->group(function () {
+    Route::post('/login', [AdminLoginController::class, 'login']);
+    Route::post('/signup', [AdminLoginController::class, 'signup']);
+});
+
+/*
+|--------------------------------------------------------------------------
+| ADMIN PROTECTED ROUTES
+|--------------------------------------------------------------------------
+*/
+Route::prefix('admin')
+    // ->middleware(['auth:sanctum', AdminAuth::class])
+    ->group(function () {
+
+        /*
+        |--------------------------------------------------------------------------
+        | ADMIN USERS
+        |--------------------------------------------------------------------------
+        */
+        Route::get('/users', function () {
+            return response()->json([
+                'status' => true,
+                'data' => User::select(
+                    'id',
+                    'name',
+                    'email',
+                    'role',
+                    'created_at'
+                )->get()
+            ]);
+        });
+
+        /*
+        |--------------------------------------------------------------------------
+        | ADMIN MOVIES
+        |--------------------------------------------------------------------------
+        */
+        Route::prefix('movies')->group(function () {
+            Route::get('/', [AdminMovieController::class, 'index']);
+            Route::post('/', [AdminMovieController::class, 'store']);
+            Route::get('/{id}', [AdminMovieController::class, 'show']);
+            Route::put('/{id}', [AdminMovieController::class, 'update']);
+            Route::delete('/{id}', [AdminMovieController::class, 'destroy']);
+        });
+    });
+
+/*
+|--------------------------------------------------------------------------
+| TICKETS (PUBLIC – for QR / ticket view)
+|--------------------------------------------------------------------------
+*/
+Route::get('/ticket/{id}', function ($id) {
+    return \App\Models\Ticket::with('booking.movie')->findOrFail($id);
+});

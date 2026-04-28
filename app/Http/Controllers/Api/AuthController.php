@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
+use PragmaRX\Google2FAQRCode\Google2FA;
+
 
 class AuthController extends Controller
 {
@@ -53,15 +55,56 @@ class AuthController extends Controller
         }
 
         // Create token
-        $token = $user->createToken('admin-token')->plainTextToken;
+        $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            "user"  => $user,
             "token" => $token,
+            "user"  => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'role' => $user->role,
+            ],
+            
             "message" => "Login successful"
         ], 200);
     }
 
+    public function enable2fa()
+{
+    $google2fa = new Google2FA();
+
+    $secret = $google2fa->generateSecretKey();
+
+    auth()->user()->update([
+        'google2fa_secret' => $secret,
+        'google2fa_enabled' => true
+    ]);
+
+    $qr = $google2fa->getQRCodeInline(
+        'YourAppName',
+        auth()->user()->email,
+        $secret
+    );
+
+    return view('2fa.setup', compact('qr', 'secret'));
+}
+public function verify(Request $request)
+{
+    $google2fa = new Google2FA();
+
+    $valid = $google2fa->verifyKey(
+        auth()->user()->google2fa_secret,
+        $request->otp
+    );
+
+    if ($valid) {
+        session(['2fa_verified' => true]);
+        return redirect('/dashboard');
+    }
+
+    return back()->withErrors(['otp' => 'Invalid OTP']);
+}
     /**
      * Logout
      */

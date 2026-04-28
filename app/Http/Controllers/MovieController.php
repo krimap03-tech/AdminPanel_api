@@ -11,10 +11,12 @@ class MovieController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        Log::info('Fetching all movies'); // Log the action
+        Log::info('Fetching all movies'); 
+        // Log::info($request->all()); // Log the action 
         return response()->json(Movie::all());
+
     }
 
     /**

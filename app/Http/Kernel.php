@@ -1,35 +1,68 @@
 <?php
 
-namespace App\Console;
+namespace App\Http;
 
-use Illuminate\Console\Scheduling\Schedule;
-use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+use Illuminate\Foundation\Http\Kernel as HttpKernel;
 
-class Kernel extends ConsoleKernel
+class Kernel extends HttpKernel
 {
     /**
-     * Register all custom artisan commands
+     * Global HTTP middleware stack.
+     *
+     * @var array
      */
-    protected $commands = [
-        \App\Console\Commands\ProcessPhoneColumn::class,   // 🔥 custom command registered
+    protected $middleware = [
+        // \App\Http\Middleware\TrustHosts::class,
+        \App\Http\Middleware\TrustProxies::class,
+        \Fruitcake\Cors\HandleCors::class,
+        \App\Http\Middleware\PreventRequestsDuringMaintenance::class,
+        \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
+        \App\Http\Middleware\TrimStrings::class,
+        \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
     ];
 
     /**
-     * Define scheduled tasks
+     * Route middleware groups.
+     *
+     * @var array
      */
-    protected function schedule(Schedule $schedule): void
-    {
-        // Example (if you want auto run command)
-        // $schedule->command('phone:process')->daily();
-    }
+    protected $middlewareGroups = [
+        'web' => [
+            \App\Http\Middleware\EncryptCookies::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Session\Middleware\StartSession::class,
+            // \Illuminate\Session\Middleware\AuthenticateSession::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \App\Http\Middleware\VerifyCsrfToken::class,
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        ],
+
+        'api' => [
+            // Use sanctum middleware only if installed and needed
+            'throttle:api',
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        ],
+    ];
 
     /**
-     * Register commands directory
+     * Route middleware (aliases).
+     *
+     * @var array
      */
-    protected function commands(): void
-    {
-        $this->load(__DIR__ . '/Commands');
+    protected $routeMiddleware = [
+        'auth' => \App\Http\Middleware\AdminAuth::class,
+        'auth.basic' => \Illuminate\Auth\Middleware\AuthenticateWithBasicAuth::class,
+        'cache.headers' => \Illuminate\Http\Middleware\SetCacheHeaders::class,
+        'can' => \Illuminate\Auth\Middleware\Authorize::class,
+        'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
+        'password.confirm' => \Illuminate\Auth\Middleware\RequirePassword::class,
+        'signed' => \Illuminate\Routing\Middleware\ValidateSignature::class,
+        'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
+        'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
 
-        require base_path('routes/console.php');
-    }
+        // Project specific aliases
+        'admin' => \App\Http\Middleware\AdminAuth::class,
+        // uncomment the next line if laravel/sanctum is installed
+         'sanctum' => \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+    ];
 }

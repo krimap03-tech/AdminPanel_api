@@ -5,7 +5,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'], // ✅ Nuxt dev server
+    'allowed_origins' => ['http://localhost:3000','http://localhost:5174' ], // ✅ Nuxt dev server
 
     'allowed_origins_patterns' => [],
 

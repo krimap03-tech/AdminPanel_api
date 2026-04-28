@@ -16,11 +16,10 @@ return new class extends Migration
 
             // Relations
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('movie_id')->nullable()->constrained()->onDelete('cascade');
-           
+            $table->foreignId('movie_id')->constrained()->onDelete('cascade');
 
             // Booking details
-            $table->integer('seats')->default(1);
+            $table->json('seats'); // ✅ CHANGED
             $table->decimal('amount', 8, 2);
             $table->string('status')->default('pending'); // pending, confirmed, cancelled
 

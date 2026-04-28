@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Movie;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class AdminMovieController extends Controller
 {
@@ -31,7 +32,8 @@ class AdminMovieController extends Controller
         $movie = Movie::findOrFail($id);
         $movie->title = $request->title;
         $movie->description = $request->description;
-
+        $movie->genre = $request->genre;
+ Log::info($request->all());
         if ($request->hasFile('poster')) {
             $path = $request->file('poster')->store('posters', 'public');
             $movie->poster = $path;

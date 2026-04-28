@@ -112,6 +112,15 @@ return [
             // 'encrypt' => env('DB_ENCRYPT', 'yes'),
             // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
+        'pos_cloud' => [
+            'driver' => 'mysql',
+            'url' => env('DB_URL'),
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '3306'),
+            'database' =>env('P_DB_DATABASE','pos_cloud'),
+            'username' =>env('DB_USERNAME', 'root'),
+            'password' =>env('DB_PASSWORD', ''),
+        ]
 
     ],
 

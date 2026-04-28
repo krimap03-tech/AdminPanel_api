@@ -13,6 +13,7 @@ return new class extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
+            $table->unsignedBigInteger('booking_id');
             $table->string('order_id');
             $table->string('payment_id')->nullable();
             $table->integer('amount');
